@@ -1,10 +1,13 @@
 """Load and plot data for one station."""
 
 # %%
-from datetime import datetime
+from datetime import datetime, tzinfo
 
+import numpy as np
 import pandas as pd
 import pytz
+import seaborn as sns
+from matplotlib import pyplot
 
 from bike_balance.load import (
     load_station_datastreams,
@@ -12,18 +15,27 @@ from bike_balance.load import (
     load_station_master_data,
 )
 
-QUERY_START = datetime(2023, 4, 20, tzinfo=pytz.UTC)
+QUERY_START = datetime(2023, 4, 12, tzinfo=pytz.UTC)
 
-# load master data and datastreams
+
+# load master data and datastream(s)
 df_master_data = load_station_master_data()
 df_datastreams = load_station_datastreams()
 
+
+# %% filter down to relevant station
+FILTER_NAME = "Heidi-Kabel-Platz"
+filter_uuid = df_master_data.query(
+    f"station_name.str.contains('{FILTER_NAME}')"
+).station_uuid.values[0]
+
+df_datastreams_filtered = df_datastreams.query("station_uuid == @filter_uuid")
 
 # %%
 
 station_master_dfs = []
 
-for index, row in df_datastreams.iterrows():
+for index, row in df_datastreams_filtered.iterrows():
     print(f"loading data for index {index} of {len(df_datastreams)} stations...")
 
     # load fill data for one station
@@ -46,42 +58,63 @@ for index, row in df_datastreams.iterrows():
     )
     station_master_dfs.append(df_station_master)
 
-df_stations = pd.concat(station_master_dfs).sort_values(
-    by=["station_name", "timestamp"],
-    ignore_index=True,
+df_stations = (
+    pd.concat(station_master_dfs)
+    .sort_values(
+        by=["station_name", "timestamp"],
+        ignore_index=True,
+    )
+    .rename(columns={"result": "bikes_available"})
 )
 
 
 # %% write data to csv
-df_stations.rename(columns={"result": "bikes_available"}).to_csv(
-    "data/stations_fill.csv", index=False
+df_stations.to_csv("data/stations_fill.csv", index=False)
+
+# %% plot data of one station
+
+
+plot_data = (
+    df_stations
+    # create fields time and date
+    .assign(
+        hour=lambda x: (x.timestamp - pd.to_datetime(x.timestamp.dt.date, utc=True))
+        / np.timedelta64(1, "h"),
+        date=lambda x: x.timestamp.dt.date,
+    )
 )
 
-# %%
+plot_data.plot.scatter(
+    x="hour",
+    y="bikes_available",
+    legend=False,
+    title="Bikes at station",
+    alpha=0.1,
+)
+# add title
+pyplot.title("Bikes at Hauptbahnhof (Heidi-Kabel-Platz)")
 
+# %% plot a 2d histogram with seaborn
+sns.histplot(
+    data=plot_data,
+    x="hour",
+    y="bikes_available",
+    bins=30,
+    cbar=True,
+    cbar_kws={"label": "Number of observations"},
+    legend=False,
+)
 
-# plot data of one station
-# (
-#     df_station
-#     # create required fields
-#     .assign(date=lambda x: x.timestamp.dt.date)
-#     .assign(time=lambda x: x.timestamp.dt.time)
-#     .groupby("date")
-#     .plot(
-#         x="time",
-#         y="result",
-#         ax=plt.gca(),
-#         legend=False,
-#         title="Bikes at station",
-#         alpha=0.35,
-#     )
-# )
-df_station.plot(
+# %% plot single station
+
+df_stations.plot(
     x="timestamp",
-    y="result",
+    y="bikes_available",
     legend=False,
     title="Bikes at station",
     alpha=1,
 )
+# add title
+pyplot.title("Bikes at Hauptbahnhof (Heidi-Kabel-Platz)")
 
 # %%

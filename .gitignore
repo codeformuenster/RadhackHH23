@@ -1,2 +1,5 @@
 # data folder
 /data/*
+
+# python
+*.py[cod]

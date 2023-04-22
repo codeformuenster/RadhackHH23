@@ -3,3 +3,6 @@
 
 # python
 *.py[cod]
+
+# cache
+/cache

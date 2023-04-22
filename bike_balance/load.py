@@ -2,17 +2,19 @@
 
 import json
 from datetime import datetime
-from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
 import pytz
 import requests
+from joblib import Memory
 
 from bike_balance.prepare import flatten_list
 
+mem = Memory(location="cache", verbose=0)
 
-@lru_cache(maxsize=None)
+
+@mem.cache
 def load_station_datastreams() -> pd.DataFrame:
     DATASTREAMS_URL = (
         "https://iot.hamburg.de/v1.1/Datastreams?"
@@ -59,7 +61,7 @@ def load_station_datastreams() -> pd.DataFrame:
     return df_datastreams
 
 
-@lru_cache(maxsize=None)
+@mem.cache
 def load_station_fill_history(
     station_datastream_link: str,
     station_uuid: str,
@@ -121,7 +123,7 @@ def load_station_fill_history(
     return df_station
 
 
-@lru_cache(maxsize=None)
+@mem.cache
 def load_station_master_data():
     """Load master data for all stations.
     Returns:

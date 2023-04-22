@@ -8,6 +8,8 @@ import pandas as pd
 import pytz
 import requests
 
+from bike_balance.prepare import flatten_list
+
 
 def load_station_datastreams() -> pd.DataFrame:
     DATASTREAMS_URL = (
@@ -56,7 +58,8 @@ def load_station_datastreams() -> pd.DataFrame:
 
 
 def load_station_fill_history(
-    datastream_link: str,
+    station_datastream_link: str,
+    station_uuid: str,
     query_start: datetime,
 ) -> pd.DataFrame:
     """Get all observations for one datastream.
@@ -72,8 +75,11 @@ def load_station_fill_history(
 
     # create url for scraping
     query_start_str = query_start.strftime("%Y-%m-%dT%H:%M:%S.%fZ").replace(":", "%3A")
-    FILTER = f"$select=phenomenonTime,result&$filter=%28phenomenonTime+gt+{query_start_str}%29"
-    STATION_URL = datastream_link + "?" + FILTER
+    FILTER = (
+        "$select=phenomenonTime,result&"
+        f"$filter=%28phenomenonTime+gt+{query_start_str}%29"
+    )
+    STATION_URL = station_datastream_link + "?" + FILTER
 
     print("load paginated station data...")
     station_results = []
@@ -103,8 +109,32 @@ def load_station_fill_history(
 
     # convert to dataframe
     df_station = (
-        pd.DataFrame(station_flat).sort_values(by="timestamp")
+        pd.DataFrame(station_flat).sort_values(by="timestamp", ignore_index=True)
         # transform timestamp to datetime
         .assign(timestamp=lambda x: pd.to_datetime(x.timestamp))
+        # add uuid field
+        .assign(station_uuid=station_uuid)
     )
     return df_station
+
+
+def load_station_master_data():
+    """Load master data for all stations.
+    Returns:
+        Dataframe with master data for all stations.
+    """
+    with open("journeys-viz/stations.json", "r") as f:
+        mapping_raw = json.load(f)
+
+    mapping_flat = flatten_list(mapping_raw)
+    mapping_selected = [
+        {
+            "station_uuid": record["properties"]["assetID"],
+            "station_name": record["Locations"][0]["name"].strip("StadtRad-Station "),
+            "lat": record["Locations"][0]["location"]["geometry"]["coordinates"][1],
+            "lng": record["Locations"][0]["location"]["geometry"]["coordinates"][0],
+        }
+        for record in mapping_flat
+    ]
+    df_stations = pd.DataFrame(mapping_selected)
+    return df_stations

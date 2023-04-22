@@ -23,6 +23,40 @@
         bottom: 0;
         width: 100%;
       }
+
+      /* Center the loader */
+      #loader {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        z-index: 1;
+        width: 120px;
+        height: 120px;
+        margin: -76px 0 0 -76px;
+        border: 16px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 16px solid #3498db;
+        -webkit-animation: spin 2s linear infinite;
+        animation: spin 2s linear infinite;
+      }
+
+      @-webkit-keyframes spin {
+        0% {
+          -webkit-transform: rotate(0deg);
+        }
+        100% {
+          -webkit-transform: rotate(360deg);
+        }
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
     </style>
   </head>
   <body>
@@ -31,6 +65,8 @@
         max-width: 200px;
       }
     </style>
+
+    <div id="loader"></div>
 
     <div id="map"></div>
 
@@ -53,8 +89,6 @@
           let nextLink = json["@iot.nextLink"];
 
           stations = json.value;
-          //   console.log(nextLink);
-          //   console.log(typeof stations);
 
           while (nextLink) {
             resp = await fetch(nextLink);
@@ -62,23 +96,23 @@
             nextLink = json["@iot.nextLink"];
 
             stations.push(...json.value);
-            // console.log(nextLink);
 
             json.value.forEach((element) => {
               if (element.Locations[0]) {
-                let stationBicycles = element.Datastreams[0].Observations[0].result;
+                let stationBicycles =
+                  element.Datastreams[0].Observations[0].result;
 
                 var bikeStation = [
                   element.Locations[0].location.geometry.coordinates[0],
                   element.Locations[0].location.geometry.coordinates[1],
                 ];
 
-                // create the popup
                 var popup = new maplibregl.Popup({ offset: 25 }).setText(
-                  element.description + "\n\nVerfügbare Räder: " + stationBicycles
+                  element.description +
+                    "\n\nVerfügbare Räder: " +
+                    stationBicycles
                 );
 
-                // create DOM element for the marker
                 var el = document.createElement("div");
                 el.id = "marker";
 
@@ -98,50 +132,13 @@
                   .setPopup(popup);
               }
             });
-
           }
-          //   console.log("done");
-          //   console.log(stations.length);
+          document.getElementById("loader").style.display = "none";
 
           return stations;
         };
 
         const stations = await getStations();
-
-        // stations.forEach((element) => {
-        //   if (element.Locations[0]) {
-        //     let stationBicycles = element.Datastreams[0].Observations[0].result;
-
-        //     var bikeStation = [
-        //       element.Locations[0].location.geometry.coordinates[0],
-        //       element.Locations[0].location.geometry.coordinates[1],
-        //     ];
-
-        //     // create the popup
-        //     var popup = new maplibregl.Popup({ offset: 25 }).setText(
-        //       element.description + "<br \>Verfügbare Räder: " + stationBicycles
-        //     );
-
-        //     // create DOM element for the marker
-        //     var el = document.createElement("div");
-        //     el.id = "marker";
-
-        //     let stationColor = "#FF0000";
-
-        //     if (stationBicycles > 3) {
-        //       stationColor = "#00FF00";
-        //     } else if (stationBicycles >= 1) {
-        //       stationColor = "#ffa500";
-        //     }
-
-        //     var marker = new maplibregl.Marker({
-        //       color: stationColor,
-        //     })
-        //       .setLngLat(bikeStation)
-        //       .addTo(map)
-        //       .setPopup(popup);
-        //   }
-        // });
       });
     </script>
   </body>

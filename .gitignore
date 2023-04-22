@@ -1,5 +1,6 @@
-# data folder
+# data and plots folder
 /data/*
+/plots/*
 
 # python
 *.py[cod]

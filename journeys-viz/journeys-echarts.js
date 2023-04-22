@@ -15,7 +15,7 @@ var myChart = echarts.init(dom, null, {
   useDirtyRect: false
 });
 var app = {};
-var ROOT_PATH = 'http://localhost:8000';
+var ROOT_PATH = 'https://www.bikebalance.org/journeys-viz';
 var option;
 
 echarts.registerMap('hamburg', hamburg);

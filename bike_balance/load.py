@@ -57,7 +57,11 @@ def load_station_datastreams() -> pd.DataFrame:
         for record in datastream_result
     ]
     # convert to dataframe
-    df_datastreams = pd.DataFrame(station_datastream_links)
+    df_datastreams = (
+        pd.DataFrame(station_datastream_links)
+        # drop duplicates, keep first
+        .drop_duplicates(subset="station_uuid", keep="first")
+    )
     return df_datastreams
 
 

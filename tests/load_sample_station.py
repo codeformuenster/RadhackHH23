@@ -1,7 +1,8 @@
 """Load and plot data for one station."""
 
 # %%
-from datetime import datetime, tzinfo
+from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -9,11 +10,9 @@ import pytz
 import seaborn as sns
 from matplotlib import pyplot
 
-from bike_balance.load import (
-    load_station_datastreams,
-    load_station_fill_history,
-    load_station_master_data,
-)
+from bike_balance.load import (load_station_datastreams,
+                               load_station_fill_history,
+                               load_station_master_data)
 
 QUERY_START = datetime(2023, 4, 12, tzinfo=pytz.UTC)
 
@@ -115,6 +114,16 @@ df_stations.plot(
     alpha=1,
 )
 # add title
-pyplot.title("Bikes at Hauptbahnhof (Heidi-Kabel-Platz)")
+pyplot.title("Bikes available at Hauptbahnhof (Heidi-Kabel-Platz)")
+# add axes label
+pyplot.xlabel("time")
+pyplot.ylabel("bikes available")
+# at horizontal line at 4 bikes
+pyplot.axhline(y=4, color="red", linestyle="--")
+
+out_path = Path("plots/bikes_at_hauptbahnhof.jpg")
+out_path.parent.mkdir(parents=True, exist_ok=True)
+pyplot.savefig(out_path, dpi=300)
+
 
 # %%
